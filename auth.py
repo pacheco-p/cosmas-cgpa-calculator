@@ -1,56 +1,41 @@
-import bcrypt
-from database import conn,cursor
+import streamlit as st
+import database
 
-def signup(username,email,password):
 
-    hashed = bcrypt.hashpw(
-        password.encode(),
-        bcrypt.gensalt()
-    )
+def signup(username, email, password):
 
-    try:
+    username = username.strip()
+    email = email.strip().lower()
 
-        cursor.execute(
-            """
-            INSERT INTO users(username,email,password)
-            VALUES(?,?,?)
-            """,
-            (
-                username,
-                email,
-                hashed
-            )
-        )
-
-        conn.commit()
-
-        return True
-
-    except:
-
+    if username == "" or email == "" or password == "":
         return False
 
-
-def login(username,password):
-
-    cursor.execute(
-        """
-        SELECT password
-        FROM users
-        WHERE username=?
-        """,
-        (username,)
+    return database.create_user(
+        username,
+        email,
+        password
     )
 
-    data = cursor.fetchone()
 
-    if data:
+def login(username, password):
 
-        if bcrypt.checkpw(
-            password.encode(),
-            data[0]
-        ):
+    user = database.login_user(
+        username,
+        password
+    )
 
-            return True
+    if user:
+        return True
 
     return False
+
+
+def logout():
+
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+
+    if "courses" in st.session_state:
+        del st.session_state["courses"]
+
+    st.rerun()
