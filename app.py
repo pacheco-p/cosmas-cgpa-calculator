@@ -1,27 +1,43 @@
 import streamlit as st
 import database
 import auth
+import dashboard
+import calculator
+import history
+import profile
+import settings
 
-database.init_db()
+# Initialize database
+database.conn.commit()
 
+# Page configuration
 st.set_page_config(
     page_title="Cosmas CGPA Calculator",
     page_icon="🎓",
     layout="wide"
 )
 
+# Session State
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-if "user" not in st.session_state:
-    st.session_state.user = None
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-st.title("🏛️ COSMAS AT SUG TOP SEAT")
-st.caption("Support • Pray • Canvass")
+# ===========================
+# LOGIN / SIGN UP PAGE
+# ===========================
 
 if not st.session_state.logged_in:
 
-    tab1, tab2 = st.tabs(["Login", "Create Account"])
+    st.title("🏛️ COSMAS AT SUG TOP SEAT")
+    st.caption("Support • Pray • Canvass")
+
+    st.markdown("---")
+
+    tab1, tab2 = st.tabs(["🔑 Login", "📝 Create Account"])
+
+    # ---------------- LOGIN ----------------
 
     with tab1:
 
@@ -34,12 +50,10 @@ if not st.session_state.logged_in:
 
         if st.button("Login"):
 
-            user = auth.login(username, password)
-
-            if user:
+            if auth.login(username, password):
 
                 st.session_state.logged_in = True
-                st.session_state.user = user
+                st.session_state.username = username
 
                 st.success("Login Successful")
 
@@ -49,77 +63,106 @@ if not st.session_state.logged_in:
 
                 st.error("Invalid Username or Password")
 
+    # ---------------- SIGNUP ----------------
+
     with tab2:
 
-        username = st.text_input("Username", key="u")
+        new_username = st.text_input(
+            "Choose Username"
+        )
 
-        email = st.text_input("Email")
+        email = st.text_input(
+            "Email Address"
+        )
 
-        password = st.text_input(
-            "Password",
-            type="password",
-            key="p"
+        new_password = st.text_input(
+            "Choose Password",
+            type="password"
         )
 
         if st.button("Create Account"):
 
-            if auth.register(
-                username,
+            if auth.signup(
+                new_username,
                 email,
-                password
+                new_password
             ):
 
-                st.success("Account Created Successfully")
+                st.success(
+                    "Account Created Successfully!"
+                )
 
             else:
 
-                st.error("Username or Email already exists.")
+                st.error(
+                    "Username or Email already exists."
+                )
 
-if st.session_state.logged_in:
+# ===========================
+# DASHBOARD
+# ===========================
+
+else:
 
     with st.sidebar:
-        st.image("cosmas_banner.jpg", use_container_width=True)
-        st.success(f"👋 {st.session_state.user[1]}")
 
-        page = st.radio(
-            "Navigation",
-            [
-                "🏠 Dashboard",
-                "🎓 CGPA Calculator",
-                "📊 History",
-                "👤 Profile",
-                "⚙️ Settings"
-            ]
+        st.image(
+            "cosmas_banner.jpg",
+            use_container_width=True
         )
 
-        if st.button("Logout"):
-            auth.logout()
+        st.success(
+            f"Welcome\n\n{st.session_state.username}"
+        )
+
+        page = st.radio(
+
+            "Navigation",
+
+            [
+
+                "🏠 Dashboard",
+
+                "🎓 CGPA Calculator",
+
+                "📊 History",
+
+                "👤 Profile",
+
+                "⚙️ Settings"
+
+            ]
+
+        )
+
+        st.markdown("---")
+
+        if st.button("🚪 Logout"):
+
+            st.session_state.logged_in = False
+
+            st.session_state.username = ""
+
             st.rerun()
 
+    # ---------------- Pages ----------------
+
     if page == "🏠 Dashboard":
-        st.title("Welcome Back 👋")
 
-        c1, c2, c3 = st.columns(3)
-
-        c1.metric("Calculations", 0)
-        c2.metric("Saved Courses", 0)
-        c3.metric("Current CGPA", "0.00")
-
-        st.info("Start a new CGPA calculation from the sidebar.")
+        dashboard.dashboard()
 
     elif page == "🎓 CGPA Calculator":
-        # Put your current calculator code here
-        pass
+
+        calculator.calculator()
 
     elif page == "📊 History":
-        st.title("Calculation History")
-        st.info("No saved calculations yet.")
+
+        history.show()
 
     elif page == "👤 Profile":
-        st.title("My Profile")
-        st.write("Username:", st.session_state.user[1])
-        st.write("Email:", st.session_state.user[2])
+
+        profile.show()
 
     elif page == "⚙️ Settings":
-        st.title("Settings")
-        st.write("More features coming soon.")
+
+        settings.show()
