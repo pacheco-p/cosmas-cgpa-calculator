@@ -1,85 +1,56 @@
-import sqlite3
 import bcrypt
-import streamlit as st
+from database import conn,cursor
 
-DB_NAME = "database.db"
-
-
-def get_connection():
-    return sqlite3.connect(DB_NAME)
-
-
-# -----------------------
-# CREATE ACCOUNT
-# -----------------------
-def register(username, email, password):
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    # Check if username or email already exists
-    cursor.execute(
-        "SELECT * FROM users WHERE username=? OR email=?",
-        (username, email)
-    )
-
-    if cursor.fetchone():
-        conn.close()
-        return False
+def signup(username,email,password):
 
     hashed = bcrypt.hashpw(
         password.encode(),
         bcrypt.gensalt()
     )
 
+    try:
+
+        cursor.execute(
+            """
+            INSERT INTO users(username,email,password)
+            VALUES(?,?,?)
+            """,
+            (
+                username,
+                email,
+                hashed
+            )
+        )
+
+        conn.commit()
+
+        return True
+
+    except:
+
+        return False
+
+
+def login(username,password):
+
     cursor.execute(
         """
-        INSERT INTO users(username,email,password)
-        VALUES(?,?,?)
+        SELECT password
+        FROM users
+        WHERE username=?
         """,
-        (username, email, hashed)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return True
-
-
-# -----------------------
-# LOGIN
-# -----------------------
-def login(username, password):
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT * FROM users WHERE username=?",
         (username,)
     )
 
-    user = cursor.fetchone()
+    data = cursor.fetchone()
 
-    conn.close()
-
-    if user:
-
-        stored_password = user[3]
+    if data:
 
         if bcrypt.checkpw(
             password.encode(),
-            stored_password
+            data[0]
         ):
-            return user
 
-    return None
+            return True
 
-
-# -----------------------
-# LOGOUT
-# -----------------------
-def logout():
-
-    st.session_state.logged_in = False
-    st.session_state.user = None
+    return False
