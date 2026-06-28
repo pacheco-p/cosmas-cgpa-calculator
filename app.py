@@ -7,42 +7,66 @@ import history
 import profile
 import settings
 
-# Initialize database
-database.conn.commit()
-
-# Page configuration
+# -------------------------------
+# PAGE CONFIGURATION
+# -------------------------------
 st.set_page_config(
     page_title="Cosmas CGPA Calculator",
     page_icon="🎓",
     layout="wide"
 )
 
-# Session State
+# -------------------------------
+# LOAD CSS
+# -------------------------------
+def load_css():
+    try:
+        with open("style.css") as f:
+            st.markdown(
+                f"<style>{f.read()}</style>",
+                unsafe_allow_html=True
+            )
+    except FileNotFoundError:
+        pass
+
+load_css()
+
+# -------------------------------
+# INITIALIZE DATABASE
+# -------------------------------
+database.conn.commit()
+
+# -------------------------------
+# SESSION STATE
+# -------------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# ===========================
+# -------------------------------
 # LOGIN / SIGN UP PAGE
-# ===========================
-
+# -------------------------------
 if not st.session_state.logged_in:
 
     st.title("🏛️ COSMAS AT SUG TOP SEAT")
     st.caption("Support • Pray • Canvass")
 
-    st.markdown("---")
+    try:
+        st.image("Cosmas_banner.png", use_container_width=True)
+    except:
+        st.warning("Banner image not found.")
 
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Create Account"])
+    login_tab, signup_tab = st.tabs(
+        ["🔐 Login", "📝 Create Account"]
+    )
 
     # ---------------- LOGIN ----------------
 
-    with tab1:
+    with login_tab:
 
         username = st.text_input("Username")
-
         password = st.text_input(
             "Password",
             type="password"
@@ -55,17 +79,17 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.username = username
 
-                st.success("Login Successful")
+                st.success("Login successful!")
 
                 st.rerun()
 
             else:
 
-                st.error("Invalid Username or Password")
+                st.error("Invalid username or password.")
 
-    # ---------------- SIGNUP ----------------
+    # ---------------- SIGN UP ----------------
 
-    with tab2:
+    with signup_tab:
 
         new_username = st.text_input(
             "Choose Username"
@@ -89,7 +113,7 @@ if not st.session_state.logged_in:
             ):
 
                 st.success(
-                    "Account Created Successfully!"
+                    "Account created successfully!"
                 )
 
             else:
@@ -98,71 +122,61 @@ if not st.session_state.logged_in:
                     "Username or Email already exists."
                 )
 
-# ===========================
-# DASHBOARD
-# ===========================
-
+# -------------------------------
+# MAIN APP
+# -------------------------------
 else:
 
     with st.sidebar:
 
-        st.image(
-            "cosmas_banner.jpg",
-            use_container_width=True
-        )
+        try:
+            st.image(
+                "Cosmas_banner.png",
+                use_container_width=True
+            )
+        except:
+            pass
 
-        st.success(
-            f"Welcome\n\n{st.session_state.username}"
+        st.markdown(
+            f"### 👋 Welcome\n**{st.session_state.username}**"
         )
 
         page = st.radio(
-
             "Navigation",
-
             [
-
                 "🏠 Dashboard",
-
                 "🎓 CGPA Calculator",
-
                 "📊 History",
-
                 "👤 Profile",
-
                 "⚙️ Settings"
-
             ]
-
         )
 
-        st.markdown("---")
+        st.divider()
 
         if st.button("🚪 Logout"):
 
             st.session_state.logged_in = False
-
             st.session_state.username = ""
+
+            if "courses" in st.session_state:
+                del st.session_state["courses"]
 
             st.rerun()
 
-    # ---------------- Pages ----------------
+    # ---------------- PAGE ROUTING ----------------
 
     if page == "🏠 Dashboard":
-
         dashboard.dashboard()
 
     elif page == "🎓 CGPA Calculator":
-
         calculator.calculator()
 
     elif page == "📊 History":
-
         history.show()
 
     elif page == "👤 Profile":
-
         profile.show()
 
     elif page == "⚙️ Settings":
-
         settings.show()
