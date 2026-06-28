@@ -1,53 +1,72 @@
 import streamlit as st
-from database import cursor
+import pandas as pd
+import database
+
 
 def dashboard():
 
     st.title("🏛️ Dashboard")
 
-    st.success(
-        f"Welcome back, {st.session_state.username} 👋"
-    )
+    st.success(f"Welcome back, {st.session_state.username} 👋")
 
-    cursor.execute(
+    # Get user's history
+    database.cursor.execute(
         """
-        SELECT COUNT(*)
+        SELECT gpa, cgpa, total_cu, total_qp, date
         FROM history
         WHERE username=?
+        ORDER BY date DESC
         """,
         (st.session_state.username,)
     )
 
-    total = cursor.fetchone()[0]
+    rows = database.cursor.fetchall()
 
-    col1, col2 = st.columns(2)
+    if not rows:
+        st.info("You haven't saved any CGPA calculations yet.")
+        return
+
+    df = pd.DataFrame(
+        rows,
+        columns=[
+            "Semester GPA",
+            "CGPA",
+            "Credit Units",
+            "Quality Points",
+            "Date"
+        ]
+    )
+
+    # Metrics
+    col1, col2, col3 = st.columns(3)
 
     col1.metric(
         "Saved Results",
-        total
+        len(df)
     )
-
-    cursor.execute(
-        """
-        SELECT MAX(cgpa)
-        FROM history
-        WHERE username=?
-        """,
-        (st.session_state.username,)
-    )
-
-    highest = cursor.fetchone()[0]
-
-    if highest is None:
-        highest = 0
 
     col2.metric(
         "Highest CGPA",
-        f"{highest:.2f}"
+        f"{df['CGPA'].max():.2f}"
+    )
+
+    col3.metric(
+        "Latest CGPA",
+        f"{df.iloc[0]['CGPA']:.2f}"
     )
 
     st.divider()
 
-    st.info(
-        "Use the sidebar to access your calculator, history and profile."
+    st.subheader("📈 CGPA Progress")
+
+    chart_df = df.iloc[::-1][["CGPA"]]
+    st.line_chart(chart_df)
+
+    st.divider()
+
+    st.subheader("🕒 Recent Calculations")
+
+    st.dataframe(
+        df,
+        use_container_width=True
     )
